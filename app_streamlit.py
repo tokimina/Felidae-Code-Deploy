@@ -83,7 +83,7 @@ taxonomy_data = {
 }
 
 # Sidebar
-st.sidebar.image("https://static.wikia.nocookie.net/prehistrico/images/4/40/Felidae.jpg/revision/latest?cb=20140521182910&path-prefix=es", use_column_width=True)
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/The_Felidae.jpg/640px-The_Felidae.jpg", use_column_width=True)
 st.sidebar.title("Tentang Aplikasi")
 st.sidebar.info(
     "Aplikasi ini menggunakan model deep learning untuk mengklasifikasikan "
