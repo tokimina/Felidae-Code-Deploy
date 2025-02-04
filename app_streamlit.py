@@ -1,15 +1,10 @@
 import streamlit as st
-
-# Set page config harus menjadi perintah Streamlit pertama
-st.set_page_config(page_title="Klasifikasi Kucing - Keluarga Felidae", page_icon="🐱", layout="wide")
-
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from PIL import Image
-import pandas as pd
 
 # Nama-nama kelas (kelas-kelas yang sudah dilatih pada model)
 class_names = [
@@ -19,11 +14,7 @@ class_names = [
 ]
 
 # Memuat model yang telah disimpan
-@st.cache_resource
-def load_model_cached():
-    return load_model('initial_model.h5')
-
-model = load_model_cached()
+model = load_model('initial_model.h5')
 
 # Fungsi prediksi
 @tf.function
@@ -82,77 +73,50 @@ taxonomy_data = {
     }
 }
 
-# Sidebar
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/The_Felidae.jpg/640px-The_Felidae.jpg", use_column_width=True)
-st.sidebar.title("Tentang Aplikasi")
-st.sidebar.info(
-    "Aplikasi ini menggunakan model deep learning untuk mengklasifikasikan "
-    "gambar kucing dari keluarga taksonomi Felidae. Upload gambar kucing, "
-    "dan aplikasi akan menampilkan prediksi spesies, taksonomi, serta deskripsi singkat."
+
+# Aplikasi Streamlit
+st.title("Klasifikasi Kucing - Keluarga Felidae")
+st.markdown(
+    """
+    Aplikasi ini digunakan untuk mengklasifikasikan gambar kucing dari keluarga taksonomi **Felidae**.
+    Upload gambar, dan aplikasi akan menampilkan prediksi spesies, taksonomi, serta deskripsi singkat.
+    """
 )
 
-# Main content
-st.title("🐱 Klasifikasi Kucing - Keluarga Felidae")
+uploaded_file = st.file_uploader("Pilih file gambar", type=["jpg", "jpeg", "png"])
 
-col1, col2 = st.columns(2)
+if uploaded_file is not None:
+    # Proses gambar
+    img = Image.open(uploaded_file)
+    img_resized = img.resize((224, 224))
+    img_array = np.array(img_resized) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
 
-with col1:
-    st.markdown(
-        """
-        ### Cara Penggunaan:
-        1. Upload gambar kucing dari keluarga Felidae
-        2. Tunggu hasil prediksi
-        3. Lihat informasi taksonomi dan deskripsi
-        """
-    )
-    
-    uploaded_file = st.file_uploader("Pilih file gambar", type=["jpg", "jpeg", "png"])
+    # Prediksi
+    predictions = predict_image(img_array)
+    predictions_np = predictions.numpy()[0]
+    predicted_class_index = np.argmax(predictions_np)
+    predicted_class = class_names[predicted_class_index]
+    predicted_prob = np.max(predictions_np)
 
-with col2:
-    if uploaded_file is not None:
-        # Proses gambar
-        img = Image.open(uploaded_file)
-        img_resized = img.resize((224, 224))
-        img_array = np.array(img_resized) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
+    # Tampilkan hasil
+    st.image(img, caption="Gambar yang diunggah", use_column_width=True)
+    st.subheader("Hasil Prediksi")
+    st.write(f"**Spesies yang terdeteksi:** {predicted_class}")
+    st.write(f"**Probabilitas:** {predicted_prob*100:.2f}%")
 
-        # Prediksi
-        predictions = predict_image(img_array)
-        predictions_np = predictions.numpy()[0]
-        predicted_class_index = np.argmax(predictions_np)
-        predicted_class = class_names[predicted_class_index]
-        predicted_prob = np.max(predictions_np)
+    # Tampilkan taksonomi
+    species_info = taxonomy_data.get(predicted_class, {})
+    if species_info:
+        st.markdown("### Informasi Taksonomi dan Deskripsi")
+        st.write(f"**Taksonomi:** {species_info['taksonomi']}")
+        st.write(f"**Deskripsi:** {species_info['deskripsi']}")
 
-        # Tampilkan hasil
-        st.image(img, caption="Gambar yang diunggah", use_column_width=True)
-        st.subheader("Hasil Prediksi")
-        st.write(f"**Spesies yang terdeteksi:** {predicted_class}")
-        st.write(f"**Probabilitas:** {predicted_prob*100:.2f}%")
-
-        # Tampilkan taksonomi
-        species_info = taxonomy_data.get(predicted_class, {})
-        if species_info:
-            st.markdown("### Informasi Taksonomi dan Deskripsi")
-            st.write(f"**Taksonomi:** {species_info['taksonomi']}")
-            st.write(f"**Deskripsi:** {species_info['deskripsi']}")
-
-        # Probabilitas untuk setiap kelas
-        st.markdown("### Probabilitas Semua Kelas")
-        prob_df = pd.DataFrame({
-            'Spesies': class_names,
-            'Probabilitas': predictions_np * 100
-        })
-        prob_df = prob_df.sort_values('Probabilitas', ascending=False).reset_index(drop=True)
-        st.dataframe(prob_df, use_column_width=True)
-
-        # Visualisasi probabilitas
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.barh(prob_df['Spesies'], prob_df['Probabilitas'])
-        ax.set_xlabel('Probabilitas (%)')
-        ax.set_ylabel('Spesies')
-        ax.set_title('Probabilitas Prediksi untuk Setiap Spesies')
-        st.pyplot(fig)
+    # Probabilitas untuk setiap kelas
+    st.markdown("### Probabilitas Semua Kelas")
+    for i, class_name in enumerate(class_names):
+        if i < len(predictions_np):
+            st.write(f"{class_name}: {predictions_np[i] * 100:.2f}%")
 
 st.markdown("---")
 st.info("Pastikan gambar yang diunggah merupakan anggota keluarga Felidae untuk hasil yang lebih akurat.")
-
