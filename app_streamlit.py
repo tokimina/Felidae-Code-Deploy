@@ -1,10 +1,15 @@
 import streamlit as st
+
+# Set page config harus menjadi perintah Streamlit pertama
+st.set_page_config(page_title="Klasifikasi Kucing - Keluarga Felidae", page_icon="🐱", layout="wide")
+
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from PIL import Image
+import pandas as pd
 
 # Nama-nama kelas (kelas-kelas yang sudah dilatih pada model)
 class_names = [
@@ -77,9 +82,6 @@ taxonomy_data = {
     }
 }
 
-# Aplikasi Streamlit
-st.set_page_config(page_title="Klasifikasi Kucing - Keluarga Felidae", page_icon="🐱", layout="wide")
-
 # Sidebar
 st.sidebar.image("https://static.wikia.nocookie.net/prehistrico/images/4/40/Felidae.jpg/revision/latest?cb=20140521182910&path-prefix=es", use_column_width=True)
 st.sidebar.title("Tentang Aplikasi")
@@ -141,7 +143,7 @@ with col2:
             'Probabilitas': predictions_np * 100
         })
         prob_df = prob_df.sort_values('Probabilitas', ascending=False).reset_index(drop=True)
-        st.dataframe(prob_df, use_container_width=True)
+        st.dataframe(prob_df, use_column_width=True)
 
         # Visualisasi probabilitas
         fig, ax = plt.subplots(figsize=(10, 6))
